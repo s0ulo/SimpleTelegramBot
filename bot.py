@@ -22,13 +22,16 @@ def get_constellation(update, context):
     planet = update.message.text.split()[-1].title()
     user = ephem.Observer()
     
-    if planet == 'Earth':
-        update.message.reply_text(f'Cannot get constellation of {planet}')
-    else:
-        planet_class = getattr(ephem, planet)
-        planet_compute = planet_class(user.date)
-        constellation = ephem.constellation(planet_compute)[-1]
-        update.message.reply_text(f'{planet.title()} today is in the {constellation} constellation')
+    try:
+        if planet == 'Earth':
+            update.message.reply_text(f'Cannot get constellation of {planet}')
+        else:
+            planet_class = getattr(ephem, planet)
+            planet_compute = planet_class(user.date)
+            constellation = ephem.constellation(planet_compute)[-1]
+            update.message.reply_text(f'{planet.title()} today is in the {constellation} constellation')
+    except AttributeError:
+        update.message.reply_text(f'{planet} is not a valid planet')
 
 def greet_user(update, context):
     print('Вызван /start')
