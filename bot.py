@@ -1,6 +1,5 @@
 import locale
 import logging
-# from datetime import datetime
 
 import ephem
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
@@ -45,10 +44,12 @@ def get_constellation(update, context):
 
 def count_words(update, context):
     answer = ''
-    if " ".join(context.args).isprintable():
-        answer = f'You said {len(context.args)} words.'
     if len(context.args) <= 0:
-        answer = 'You said nothing.'
+        answer = 'You haven\'t sent anything.'
+    elif len(context.args) == 1:
+        answer = 'You\'ve sent only 1 word.'
+    else:
+        answer = f'You\'ve sent {len(context.args)} words'
     update.message.reply_text(answer)
 
 
@@ -57,11 +58,11 @@ def greet_user(update, context):
     update.message.reply_text('Привет, пользователь! Ты вызвал команду /start')
 
 
-def get_full_moon(update, context):
-    user = ephem.Observer()
-    full_moon_dt = ephem.next_full_moon(user.date).datetime()
-    update.message.reply_text('Ближайшее полнолуние будет ' +
-                              full_moon_dt.strftime('%d %B %Y, примерно в %H:%M'))
+def get_next_full_moon(update, context):
+    input_dt = context.args[0]
+    full_moon_dt = ephem.next_full_moon(input_dt).datetime()
+    update.message.reply_text(
+        'Ближайшее полнолуние: ' + full_moon_dt.strftime('%d %B %Y, примерно в %H:%M'))
 
 
 def talk_to_me(update, context):
@@ -81,8 +82,7 @@ def main():
 
     dp.add_handler(CommandHandler("wordcount", count_words))
 
-    full_moon_q = 'Когда ближайшее полнолуние?'
-    dp.add_handler(MessageHandler(Filters.text(full_moon_q), get_full_moon))
+    dp.add_handler(CommandHandler('next_fool_moon', get_next_full_moon))
 
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
 
