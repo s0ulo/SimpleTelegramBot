@@ -1,4 +1,6 @@
+import locale
 import logging
+# from datetime import datetime
 
 import ephem
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
@@ -12,6 +14,8 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     filename='bot.log'
                     )
 
+# Ставим локаль для русского формата даты
+locale.setlocale(locale.LC_TIME, 'ru_RU')
 
 # Настройки прокси
 PROXY = {'proxy_url': settings.PROXY_URL, 'urllib3_proxy_kwargs': {
@@ -33,9 +37,10 @@ def get_constellation(update, context):
             planet_compute = planet_class(user.date)
             constellation = ephem.constellation(planet_compute)[-1]
             update.message.reply_text(
-                f'{planet.title()} today is in the {constellation} constellation')
+                f'{planet.title()} is in the {constellation} constellation today')
     except AttributeError:
-        update.message.reply_text(f'{planet} is not a valid planet')
+        update.message.reply_text(
+            f'{planet} is not a valid planet. Please try again...')
 
 
 def count_words(update, context):
@@ -48,8 +53,15 @@ def count_words(update, context):
 
 
 def greet_user(update, context):
-    print('Вызван /start')
+    # print('Вызван /start')
     update.message.reply_text('Привет, пользователь! Ты вызвал команду /start')
+
+
+def get_full_moon(update, context):
+    user = ephem.Observer()
+    full_moon_dt = ephem.next_full_moon(user.date).datetime()
+    update.message.reply_text('Ближайшее полнолуние будет ' +
+                              full_moon_dt.strftime('%d %B %Y, примерно в %H:%M'))
 
 
 def talk_to_me(update, context):
@@ -68,6 +80,9 @@ def main():
     dp.add_handler(CommandHandler("planet", get_constellation))
 
     dp.add_handler(CommandHandler("wordcount", count_words))
+
+    full_moon_q = 'Когда ближайшее полнолуние?'
+    dp.add_handler(MessageHandler(Filters.text(full_moon_q), get_full_moon))
 
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
 
