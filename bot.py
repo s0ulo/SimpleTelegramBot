@@ -4,6 +4,7 @@ import ephem
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 
 import settings
+# from importlib import import_module
 
 # Будем записывать отчет о работе бота в файл bot.log
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
@@ -37,6 +38,15 @@ def get_constellation(update, context):
         update.message.reply_text(f'{planet} is not a valid planet')
 
 
+def count_words(update, context):
+    answer = ''
+    if " ".join(context.args).isprintable():
+        answer = f'You said {len(context.args)} words.'
+    if len(context.args) <= 0:
+        answer = 'You said nothing.'
+    update.message.reply_text(answer)
+
+
 def greet_user(update, context):
     print('Вызван /start')
     update.message.reply_text('Привет, пользователь! Ты вызвал команду /start')
@@ -44,8 +54,8 @@ def greet_user(update, context):
 
 def talk_to_me(update, context):
     user_text = update.message.text
-    print(user_text)
-    update.message.reply_text(user_text)
+    # print(user_text)
+    update.message.reply_text(f'{user_text}?!')
 
 
 def main():
@@ -54,9 +64,12 @@ def main():
 
     dp = mybot.dispatcher
     dp.add_handler(CommandHandler("start", greet_user))
+
     dp.add_handler(CommandHandler("planet", get_constellation))
+
+    dp.add_handler(CommandHandler("wordcount", count_words))
+
     dp.add_handler(MessageHandler(Filters.text, talk_to_me))
-    dp.add_handler(MessageHandler(Filters.text, get_constellation))
 
     logging.info("Бот стартовал")
 
