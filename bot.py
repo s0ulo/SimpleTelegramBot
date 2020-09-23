@@ -1,10 +1,12 @@
 import locale
 import logging
+from random import randint
 
 import ephem
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 
 import settings
+
 # from importlib import import_module
 
 # Будем записывать отчет о работе бота в файл bot.log
@@ -59,10 +61,13 @@ def greet_user(update, context):
 
 
 def get_next_full_moon(update, context):
-    input_dt = context.args[0]
-    full_moon_dt = ephem.next_full_moon(input_dt).datetime()
-    update.message.reply_text(
-        'Ближайшее полнолуние: ' + full_moon_dt.strftime('%d %B %Y, примерно в %H:%M'))
+    try:
+        full_moon_date = ephem.next_full_moon(context.args[0]).datetime()
+        update.message.reply_text(
+            'Ближайшее полнолуние: ' + full_moon_date.strftime('%d %B %Y, примерно в %H:%M'))
+    except ValueError:
+        update.message.reply_text(
+            'Некорректная дата! Введите дату в формате \"ГГГГ-ММ-ДД\"')
 
 
 def talk_to_me(update, context):
@@ -71,12 +76,37 @@ def talk_to_me(update, context):
     update.message.reply_text(f'{user_text}?!')
 
 
+def guess_number(update, context):
+    if context.args:
+        try:
+            user_number = int(context.args[0])
+            message = play_random_numbers(user_number)
+        except(TypeError, ValueError):
+            message = "Введите целое число"
+    else:
+        message = "Введите целое число"
+    update.message.reply_text(message)
+
+
+def play_random_numbers(user_number):
+    bot_number = randint(user_number - 10, user_number + 10)
+    if user_number > bot_number:
+        message = f"Ты загадал {user_number}, я загадал {bot_number}, ты выиграл!"
+    elif user_number == bot_number:
+        message = f"Ты загадал {user_number}, я загадал {bot_number}, ничья!"
+    else:
+        message = f"Ты загадал {user_number}, я загадал {bot_number}, я выиграл!"
+    return message
+
+
 def main():
     # Создаем бота и передаем ему ключ для авторизации на серверах Telegram
     mybot = Updater(settings.API_KEY, use_context=True, request_kwargs=PROXY)
 
     dp = mybot.dispatcher
     dp.add_handler(CommandHandler("start", greet_user))
+
+    dp.add_handler(CommandHandler("guess", guess_number))
 
     dp.add_handler(CommandHandler("planet", get_constellation))
 
