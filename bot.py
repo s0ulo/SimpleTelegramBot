@@ -1,8 +1,10 @@
 import locale
 import logging
-from random import randint
+from glob import glob
+from random import choice, randint
 
 import ephem
+from emoji import emojize
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 
 import settings
@@ -19,11 +21,17 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 locale.setlocale(locale.LC_TIME, 'ru_RU')
 
 # Настройки прокси
-PROXY = {'proxy_url': settings.PROXY_URL, 'urllib3_proxy_kwargs': {
-    'username': settings.PROXY_USERNAME,
-    'password': settings.PROXY_PASSWORD
-}
-}
+PROXY = {'proxy_url': settings.PROXY_URL,
+         'urllib3_proxy_kwargs': {
+             'username': settings.PROXY_USERNAME,
+             'password': settings.PROXY_PASSWORD}}
+
+
+def get_smile(user_data):  # get and return random emoji for each user
+    if 'emoji' not in user_data:
+        smile = choice(settings.USER_EMOJI)
+        return emojize(smile, use_aliases=True)
+    return user_data['emoji']  # or return existing emoji
 
 
 def get_constellation(update, context):
@@ -56,8 +64,10 @@ def count_words(update, context):
 
 
 def greet_user(update, context):
-    # print('Вызван /start')
-    update.message.reply_text('Привет, пользователь! Ты вызвал команду /start')
+    # Saving emoji for each user in context.data_user
+    context.user_data['emoji'] = get_smile(context.user_data)
+    update.message.reply_text(
+        f"Привет, пользователь {context.user_data['emoji']}! Ты вызвал команду /start")
 
 
 def get_next_full_moon(update, context):
@@ -72,8 +82,10 @@ def get_next_full_moon(update, context):
 
 def talk_to_me(update, context):
     user_text = update.message.text
-    # print(user_text)
-    update.message.reply_text(f'{user_text}?!')
+    user_name = update.effective_user.first_name
+    context.user_data['emoji'] = get_smile(context.user_data)
+    update.message.reply_text(
+        f"{user_name}, что значит \"{user_text}\"?!{context.user_data['emoji']}")
 
 
 def guess_number(update, context):
@@ -99,6 +111,13 @@ def play_random_numbers(user_number):
     return message
 
 
+def send_dog_picture(update, context):
+    dog_photos_list = glob('images/dog*.jp*g')
+    dog_pic_filename = choice(dog_photos_list)
+    chat_id = update.effective_chat.id  # get current chat.id for context
+    context.bot.send_photo(chat_id=chat_id, photo=open(dog_pic_filename, 'rb'))
+
+
 def main():
     # Создаем бота и передаем ему ключ для авторизации на серверах Telegram
     mybot = Updater(settings.API_KEY, use_context=True, request_kwargs=PROXY)
@@ -109,6 +128,8 @@ def main():
     dp.add_handler(CommandHandler("guess", guess_number))
 
     dp.add_handler(CommandHandler("planet", get_constellation))
+
+    dp.add_handler(CommandHandler("dog", send_dog_picture))
 
     dp.add_handler(CommandHandler("wordcount", count_words))
 
